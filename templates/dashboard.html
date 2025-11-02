@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Campo Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Arquivos de Inspeção</h2>
+    <form method="POST" action="{{ url_for('create_folder') }}">
+      <input name="folder_name" placeholder="Nova Pasta">
+      <button type="submit">Criar</button>
+    </form>
+
+    {% for f in folders %}
+      <div class="folder-card">
+        <h3>{{ f.name }}</h3>
+        <a href="{{ url_for('delete_folder', id=f.id) }}" onclick="return confirm('Excluir pasta?')">Excluir Pasta</a>
+
+        {% for i in inspections if i[5] == f.name %}
+          <div class="inspection-card">
+            <strong>{{ i[1] }}</strong><br>
+            {{ i[2] }} {{ i[3] }}<br>
+            <small>{{ i[4] }}</small><br>
+            <a href="{{ url_for('delete_record', id=i[0]) }}" onclick="return confirm('Excluir registro?')">Excluir</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <a href="{{ url_for('add_record') }}"><button>Novo Registro</button></a>
+  </div>
+</body>
+</html>
