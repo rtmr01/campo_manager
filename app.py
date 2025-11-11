@@ -1,11 +1,8 @@
-from flask import render_template, request, redirect, url_for, session, flash
+from flask import render_template, request, redirect, url_for
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash
-from db import app, mysql  # ✅ importa o mesmo app configurado no db.py
+from db import app, mysql
 import os
 import json
-
-app.secret_key = "campo_manager_key"
 
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -13,36 +10,14 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 @app.route("/")
 def home():
-    if "user_id" in session:
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    cur = mysql.connection.cursor()
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-        cur.execute("SELECT * FROM users WHERE email=%s", [email])
-        user = cur.fetchone()
-        if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["id"]
-            return redirect(url_for("dashboard"))
-        flash("Credenciais inválidas", "error")
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+    return redirect(url_for("dashboard"))
 
 @app.route("/dashboard")
 def dashboard():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM folders")
     folders = cur.fetchall()
+
     cur.execute("""
         SELECT i.id, i.name, i.dimensions_value, i.dimensions_unit,
                i.created_at, f.name AS folder_name
@@ -51,6 +26,7 @@ def dashboard():
         ORDER BY i.created_at DESC
     """)
     inspections = cur.fetchall()
+
     return render_template("dashboard.html", folders=folders, inspections=inspections)
 
 @app.route("/folder", methods=["POST"])
@@ -73,6 +49,7 @@ def add_record():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM folders")
     folders = cur.fetchall()
+
     if request.method == "POST":
         folder_id = request.form["folder_id"]
         name = request.form["name"]
@@ -102,8 +79,10 @@ def add_record():
              dimensions_value, dimensions_unit, observations)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, [folder_id, name, jusante_path, montante_path, json.dumps(other_paths), value, unit, obs])
+
         mysql.connection.commit()
         return redirect(url_for("dashboard"))
+
     return render_template("add_record.html", folders=folders)
 
 @app.route("/delete/<int:id>")
