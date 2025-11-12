@@ -1,0 +1,165 @@
+/* src/components/Dashboard.css */
+.dashboard-container {
+  padding-bottom: 70px; /* Espaço para o BottomNav */
+}
+
+.card {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.list-header {
+  padding: 1.25rem;
+}
+
+.list-header-title {
+  margin-bottom: 1rem;
+}
+.list-header-title h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+}
+.list-header-title small {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.new-folder-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.new-folder-form input {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.button-primary-icon {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.folder-group {
+  margin-bottom: 0.5rem;
+}
+
+.folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--white);
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.folder-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.folder-title h3 {
+  margin: 0;
+}
+
+.folder-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background-color: var(--background-grey);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.inspections-list {
+  padding: 0.5rem 0.5rem 0 0.5rem;
+}
+
+.inspection-card {
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.card-header strong {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.card-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-blue-dark);
+  background-color: var(--primary-blue-light);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid var(--background-grey);
+  padding-top: 0.75rem;
+}
+
+.button-icon-edit, .button-icon-delete {
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+.button-icon-edit { color: var(--text-secondary); }
+.button-icon-delete { color: var(--danger); background-color: var(--danger-light); border: 1px solid var(--danger-light); }
+
+.empty-folder {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1rem;
+}
+
+/* Adicione este novo seletor */
+.folder-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Espaçamento entre o contador e o botão */
+}
+
+/* O botão .button-icon-delete já existe, 
+   mas vamos garantir que ele não estrague o layout da pasta */
+.folder-header .button-icon-delete {
+  padding: 0.5rem; /* Ajuste o padding se necessário */
+}
+
+/* O span .folder-count já existe, não precisa mudar */

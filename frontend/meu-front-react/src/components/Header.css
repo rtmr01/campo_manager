@@ -1,0 +1,25 @@
+/* src/components/Header.css */
+.app-header {
+  background-color: var(--white);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.header-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}

@@ -1,0 +1,68 @@
+/* src/index.css */
+
+:root {
+  --primary-blue: #2979ff; /* Azul principal (do seu style.css original, mas podemos usar) */
+  --primary-blue-light: #e3f2fd;
+  --primary-blue-dark: #0d47a1;
+  --background-grey: #f4f6f8; /* Cor de fundo das telas */
+  --text-primary: #171c26;
+  --text-secondary: #5a6578;
+  --text-light: #8a94a6;
+  --border-color: #e0e4e9;
+  --white: #ffffff;
+  --danger: #e53935;
+  --danger-light: #ffebee;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--background-grey);
+  color: var(--text-primary);
+  /* Garante que o app ocupe a tela toda */
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Estilos de input globais */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+  background-color: var(--white);
+  margin-bottom: 1rem;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-light);
+}
+
+/* Estilos de botão globais */
+button {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 14px 20px;
+}

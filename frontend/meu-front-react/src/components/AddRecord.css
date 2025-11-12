@@ -1,0 +1,112 @@
+/* src/components/AddRecord.css */
+
+.add-record-container {
+  padding-bottom: 70px; /* Espaço para o BottomNav */
+}
+
+.form-header {
+  margin-bottom: 1.5rem;
+}
+.form-header h3 {
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem 0;
+}
+.form-header p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.form-card {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Rótulos dos campos */
+label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+/* Wrapper do Select para ícone */
+.select-wrapper {
+  position: relative;
+}
+.select-wrapper select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 40px; /* Espaço para o ícone */
+}
+.select-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none; /* Deixa o clique passar para o select */
+  color: var(--text-light);
+}
+
+
+/* O uploader de arquivo customizado */
+.file-upload-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+.file-uploader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  padding: 2rem;
+  cursor: pointer;
+  background-color: var(--background-grey);
+  transition: background-color 0.2s;
+  margin-bottom: 1rem;
+}
+.file-uploader-box:hover {
+  background-color: var(--white);
+  border-color: var(--primary-blue);
+}
+.file-uploader-box span {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* Inputs de dimensão lado a lado */
+.dimension-inputs {
+  display: flex;
+  gap: 1rem;
+}
+.dimension-inputs input {
+  margin-bottom: 0;
+}
+
+/* Botão Salvar */
+.button-save {
+  width: 100%;
+  background-color: var(--text-primary); /* Botão preto como na imagem */
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  padding: 16px;
+}
+.button-save:hover {
+  opacity: 0.9;
+}
