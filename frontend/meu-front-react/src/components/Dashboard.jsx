@@ -3,31 +3,38 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
 import { 
-  IoAdd, IoChevronDown, IoChevronUp, IoCalendarClearOutline, 
-  IoResize, IoImageOutline, IoPencil, IoTrash 
+  IoAdd, 
+  IoChevronDown, 
+  IoChevronUp, 
+  IoCalendarClearOutline, 
+  IoResize, 
+  IoImageOutline, 
+  IoPencil, 
+  IoTrash,
+  IoDocumentTextOutline 
 } from 'react-icons/io5';
 
-// Configuração do Axios (como fizemos antes)
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:5000' // Seu backend Flask
+  baseURL: 'http://127.0.0.1:5000' 
 });
 
 
 function Dashboard() {
-  // --- Estados (sem tipos) ---
   const [folders, setFolders] = useState([]);
   const [inspections, setInspections] = useState([]);
   const [newFolderName, setNewFolderName] = useState('');
   
-  const [openFolder, setOpenFolder] = useState('DIVERSOS'); 
+  const [openFolder, setOpenFolder] = useState(null); 
 
-  // --- Funções ---
   const fetchData = () => {
-    // API (sem tipos)
     apiClient.get('/api/dashboard')
       .then(response => {
         setFolders(response.data.folders);
         setInspections(response.data.inspections);
+        
+        if (!openFolder && response.data.folders.length > 0) {
+            setOpenFolder(response.data.folders[0].name);
+        }
       })
       .catch(error => console.error("Erro ao buscar dados:", error));
   };
@@ -36,7 +43,6 @@ function Dashboard() {
     fetchData();
   }, []);
 
-  // Evento de formulário (sem tipos)
   const handleCreateFolder = (e) => {
     e.preventDefault();
     if (!newFolderName) return;
@@ -67,7 +73,7 @@ function Dashboard() {
       apiClient.get(`/api/folder/delete/${folderId}`)
         .then(res => {
           if (res.data.success) {
-            fetchData(); // Atualiza tudo
+            fetchData(); 
           } else {
             alert("Erro ao excluir pasta.");
           }
@@ -79,7 +85,28 @@ function Dashboard() {
     }
   };
 
-  // Função auxiliar (sem tipos)
+  const handleDownloadPdf = (id, name) => {
+    apiClient.get(`/api/inspection/pdf/${id}`, {
+      responseType: 'blob' 
+    }).then(response => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = name.replace(/\s/g, '_');
+      link.setAttribute('download', `${cleanName}_relatorio.pdf`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    }).catch(error => {
+      console.error("Erro ao baixar PDF:", error);
+      alert('Erro ao gerar ou baixar o relatório PDF. Verifique o console ou o backend Flask. (Você instalou o "fpdf2"?).');
+    });
+  }
+  
   const getInspectionsByFolder = (folderName) => {
     return inspections.filter(i => i.folder_name === folderName);
   };
@@ -87,6 +114,7 @@ function Dashboard() {
   // --- Renderização ---
   return (
     <div className="dashboard-container">
+      
       {/* Seção "Arquivos de Inspeção" (Formulário de criar pasta) */}
       <div className="card list-header">
         <div className="list-header-title">
@@ -116,7 +144,7 @@ function Dashboard() {
         return (
           <div className="folder-group" key={folder.id}>
             
-            {/* **** TRECHO MODIFICADO (do passo anterior) **** */}
+            {/* Header da Pasta */}
             <div className="folder-header" onClick={() => setOpenFolder(isOpen ? null : folder.name)}>
               <div className="folder-title">
                 {isOpen ? <IoChevronUp /> : <IoChevronDown />}
@@ -133,9 +161,9 @@ function Dashboard() {
                 </button>
               </div>
             </div>
-            {/* **** FIM DO TRECHO MODIFICADO **** */}
 
 
+            
             {/* Inspeções dentro da pasta (só mostra se estiver aberta) */}
             {isOpen && (
               <div className="inspections-list">
@@ -156,10 +184,20 @@ function Dashboard() {
                           <IoResize /> {insp.dimensions_value} {insp.dimensions_unit}
                         </span>
                         <span className="detail-item">
-                          <IoImageOutline /> 2 fotos {/* (hardcoded) */}
+                          <IoImageOutline /> 2 fotos {/* (hardcoded, mas reflete as fotos jusante/montante) */}
                         </span>
                       </div>
                       <div className="card-actions">
+                        
+                        {/* NOVO BOTÃO DE DOWNLOAD PDF - Usando a classe 'button-icon-pdf' */}
+                        <button 
+                          className="button-icon-pdf" 
+                          onClick={() => handleDownloadPdf(insp.id, insp.name)} 
+                          title="Baixar PDF"
+                        >
+                          <IoDocumentTextOutline size={16} />
+                        </button>
+                        
                         <button className="button-icon-edit">
                           <IoPencil size={16} />
                         </button>
