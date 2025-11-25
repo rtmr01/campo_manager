@@ -11,7 +11,8 @@ import {
   IoImageOutline, 
   IoPencil, 
   IoTrash,
-  IoDocumentTextOutline 
+  IoDocumentTextOutline,
+  IoAlbumsOutline 
 } from 'react-icons/io5';
 
 const apiClient = axios.create({
@@ -27,6 +28,7 @@ function Dashboard() {
   const [openFolder, setOpenFolder] = useState(null); 
 
   const fetchData = () => {
+    // ... (restante da função fetchData)
     apiClient.get('/api/dashboard')
       .then(response => {
         setFolders(response.data.folders);
@@ -44,6 +46,7 @@ function Dashboard() {
   }, []);
 
   const handleCreateFolder = (e) => {
+    // ... (restante da função handleCreateFolder)
     e.preventDefault();
     if (!newFolderName) return;
     
@@ -59,12 +62,14 @@ function Dashboard() {
   };
 
   const handleDeleteRecord = (id) => {
+    // ... (restante da função handleDeleteRecord)
     if (window.confirm('Excluir este registro?')) {
       apiClient.get(`/api/delete/${id}`).then(fetchData); 
     }
   }
 
   const handleDeleteFolder = (e, folderId, folderName) => {
+    // ... (restante da função handleDeleteFolder)
     e.stopPropagation(); 
     
     const confirmMessage = `Tem certeza que deseja excluir a pasta "${folderName}"?\n\nATENÇÃO: Todos os registros de inspeção dentro dela também serão permanentemente excluídos.`;
@@ -86,6 +91,7 @@ function Dashboard() {
   };
 
   const handleDownloadPdf = (id, name) => {
+    // ... (restante da função handleDownloadPdf)
     apiClient.get(`/api/inspection/pdf/${id}`, {
       responseType: 'blob' 
     }).then(response => {
@@ -106,6 +112,83 @@ function Dashboard() {
       alert('Erro ao gerar ou baixar o relatório PDF. Verifique o console ou o backend Flask. (Você instalou o "fpdf2"?).');
     });
   }
+  
+  // =================================================================
+  // NOVAS FUNÇÕES DE DOWNLOAD (Features 1, 2, 4)
+  // =================================================================
+
+  // Feature 1: Baixar Fotos (ZIP/PNG)
+  const handleDownloadPhotos = (id, name) => {
+    apiClient.get(`/api/inspection/photos/${id}`, {
+      responseType: 'blob' 
+    }).then(response => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = name.replace(/\s/g, '_');
+      link.setAttribute('download', `${cleanName}_fotos.zip`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    }).catch(error => {
+      console.error("Erro ao baixar fotos:", error);
+      alert('Erro ao gerar ou baixar o ZIP de fotos. Verifique o console ou o backend Flask. (Você instalou o "Pillow"?).');
+    });
+  }
+
+  // Feature 2: Baixar Dados de Texto (CSV)
+  const handleDownloadCsv = (id, name) => {
+    apiClient.get(`/api/inspection/csv/${id}`, {
+      responseType: 'blob' 
+    }).then(response => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = name.replace(/\s/g, '_');
+      link.setAttribute('download', `${cleanName}_dados.csv`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    }).catch(error => {
+      console.error("Erro ao baixar CSV:", error);
+      alert('Erro ao gerar ou baixar o arquivo CSV. Verifique o console ou o backend Flask.');
+    });
+  }
+
+  // Feature 4: Baixar Todos os PDFs de uma Pasta (ZIP)
+  const handleDownloadFolderPdfs = (folderId, folderName) => {
+    apiClient.get(`/api/folder/pdf/${folderId}`, {
+      responseType: 'blob' 
+    }).then(response => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = folderName.replace(/\s/g, '_');
+      link.setAttribute('download', `${cleanName}_todos_relatorios.zip`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    }).catch(error => {
+      console.error("Erro ao baixar PDFs da pasta:", error);
+      alert('Erro ao gerar ou baixar o ZIP dos PDFs da pasta. Verifique o console ou o backend Flask.');
+    });
+  }
+
+  // =================================================================
+  // FIM DAS NOVAS FUNÇÕES
+  // =================================================================
   
   const getInspectionsByFolder = (folderName) => {
     return inspections.filter(i => i.folder_name === folderName);
@@ -152,6 +235,21 @@ function Dashboard() {
               </div>
               
               <div className="folder-header-right">
+                
+                {/* NOVO BOTÃO: Baixar Todos os PDFs da Pasta (Feature 4) */}
+                {inspectionsInFolder.length > 0 && (
+                  <button 
+                    className="button-icon-pdf" /* Reutilizando o estilo do PDF individual */
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evita fechar/abrir a pasta
+                      handleDownloadFolderPdfs(folder.id, folder.name);
+                    }}
+                    title={`Baixar todos os ${inspectionsInFolder.length} PDFs da pasta`}
+                  >
+                    <IoAlbumsOutline size={16} />
+                  </button>
+                )}
+                
                 <span className="folder-count">{inspectionsInFolder.length} registros</span>
                 <button 
                   className="button-icon-delete"
@@ -184,24 +282,42 @@ function Dashboard() {
                           <IoResize /> {insp.dimensions_value} {insp.dimensions_unit}
                         </span>
                         <span className="detail-item">
-                          <IoImageOutline /> 2 fotos {/* (hardcoded, mas reflete as fotos jusante/montante) */}
+                          <IoImageOutline /> 2 fotos
                         </span>
                       </div>
                       <div className="card-actions">
                         
-                        {/* NOVO BOTÃO DE DOWNLOAD PDF - Usando a classe 'button-icon-pdf' */}
+                        {/* NOVO BOTÃO: Baixar Dados (CSV) - Feature 2 */}
                         <button 
                           className="button-icon-pdf" 
-                          onClick={() => handleDownloadPdf(insp.id, insp.name)} 
-                          title="Baixar PDF"
+                          onClick={() => handleDownloadCsv(insp.id, insp.name)} 
+                          title="Baixar Dados (CSV)"
                         >
                           <IoDocumentTextOutline size={16} />
                         </button>
                         
-                        <button className="button-icon-edit">
+                        {/* NOVO BOTÃO: Baixar Fotos (ZIP/PNG) - Feature 1 */}
+                        <button 
+                          className="button-icon-pdf" 
+                          onClick={() => handleDownloadPhotos(insp.id, insp.name)} 
+                          title="Baixar Fotos (ZIP/PNG)"
+                        >
+                          <IoImageOutline size={16} />
+                        </button>
+                        
+                        {/* Botão PDF Original */}
+                        <button 
+                          className="button-icon-pdf" 
+                          onClick={() => handleDownloadPdf(insp.id, insp.name)} 
+                          title="Baixar Relatório PDF"
+                        >
+                          <IoDocumentTextOutline size={16} />
+                        </button>
+                        
+                        <button className="button-icon-edit" title="Editar">
                           <IoPencil size={16} />
                         </button>
-                        <button className="button-icon-delete" onClick={() => handleDeleteRecord(insp.id)}>
+                        <button className="button-icon-delete" onClick={() => handleDeleteRecord(insp.id)} title="Excluir">
                           <IoTrash size={16} />
                         </button>
                       </div>

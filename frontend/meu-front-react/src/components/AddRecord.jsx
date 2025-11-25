@@ -25,6 +25,10 @@ function AddRecord() {
   const [fotoMontante, setFotoMontante] = useState(null);
   const [outrasFotos, setOutrasFotos] = useState(null);
 
+  // NOVO: States para as prévias das fotos (Feature 3)
+  const [previewJusante, setPreviewJusante] = useState(null);
+  const [previewMontante, setPreviewMontante] = useState(null);
+
   // Busca pastas para o <select>
   useEffect(() => {
     apiClient.get('/api/dashboard').then(res => {
@@ -33,7 +37,45 @@ function AddRecord() {
         setFolderId(res.data.folders[0].id); // Seleciona a primeira
       }
     });
+    
+    // NOVO: Função de limpeza para revogar URLs de preview quando o componente for desmontado
+    return () => {
+      if (previewJusante) URL.revokeObjectURL(previewJusante);
+      if (previewMontante) URL.revokeObjectURL(previewMontante);
+    };
   }, []);
+
+  // NOVO: Função para manipular a mudança de arquivo e criar preview (Feature 3)
+  const handleFileChange = (e, setFileState, setPreviewState) => {
+    const file = e.target.files[0];
+    
+    // Revoga URL antiga
+    setPreviewState(prevUrl => {
+      if (prevUrl) URL.revokeObjectURL(prevUrl);
+      return null;
+    });
+
+    if (file) {
+      // Cria nova URL de preview
+      const newUrl = URL.createObjectURL(file);
+      setPreviewState(newUrl);
+      // Define o arquivo para o estado de submissão
+      setFileState(file);
+    } else {
+      setFileState(null);
+    }
+  };
+
+  // NOVO: Função para manipular mudança de múltiplos arquivos
+  const handleMultiFileChange = (e, setFilesState) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+        setFilesState(files);
+    } else {
+        setFilesState(null);
+    }
+  };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -121,8 +163,13 @@ function AddRecord() {
 
         {/* Bloco de Fotos */}
         <div className="form-card">
+          
           {/* File Uploader Customizado - Jusante */}
           <label className="file-upload-label">Foto Jusante *</label>
+          
+          {/* Pré-visualização da imagem (Feature 3) */}
+          {previewJusante && <img src={previewJusante} alt="Prévia Jusante" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.5rem' }} />}
+          
           <label htmlFor="foto_jusante" className="file-uploader-box">
             <IoCameraOutline size={32} color="var(--text-light)" />
             <span>{getFileLabel(fotoJusante)}</span>
@@ -131,13 +178,17 @@ function AddRecord() {
             id="foto_jusante" 
             type="file" 
             accept="image/*" 
-            onChange={(e) => setFotoJusante(e.target.files[0])}
+            onChange={(e) => handleFileChange(e, setFotoJusante, setPreviewJusante)} // Chamada modificada
             required
             hidden 
           />
 
           {/* File Uploader Customizado - Montante */}
           <label className="file-upload-label">Foto Montante *</label>
+          
+          {/* Pré-visualização da imagem (Feature 3) */}
+          {previewMontante && <img src={previewMontante} alt="Prévia Montante" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.5rem' }} />}
+
           <label htmlFor="foto_montante" className="file-uploader-box">
             <IoCameraOutline size={32} color="var(--text-light)" />
             <span>{getFileLabel(fotoMontante)}</span>
@@ -146,7 +197,7 @@ function AddRecord() {
             id="foto_montante" 
             type="file" 
             accept="image/*" 
-            onChange={(e) => setFotoMontante(e.target.files[0])}
+            onChange={(e) => handleFileChange(e, setFotoMontante, setPreviewMontante)} // Chamada modificada
             required
             hidden 
           />
@@ -161,7 +212,7 @@ function AddRecord() {
             id="outras_fotos" 
             type="file" 
             accept="image/*" 
-            onChange={(e) => setOutrasFotos(e.target.files)}
+            onChange={(e) => handleMultiFileChange(e, setOutrasFotos)} // Chamada modificada
             multiple
             hidden 
           />
