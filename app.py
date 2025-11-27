@@ -13,6 +13,12 @@ import zipfile
 from PIL import Image 
 from io import BytesIO 
 
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener() 
+except ImportError:
+    print("AVISO: pillow-heif não instalado. Arquivos HEIC/HEIF não serão processados.")
+
 # --- Importação FPDF2 ---
 try:
     from fpdf import FPDF
@@ -24,7 +30,7 @@ try:
 
 except ImportError:
     FPDF = None
-# ------------------------
+
 
 
 UPLOAD_FOLDER = "static/uploads"
@@ -32,8 +38,96 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
+
+
+def convert_dms_to_decimal(dms, ref):
+    """Converte coordenadas EXIF (Graus, Minutos, Segundos) para formato decimal."""
+    degrees = dms[0][0] / dms[0][1]
+    minutes = dms[1][0] / dms[1][1]
+    seconds = dms[2][0] / dms[2][1]
+    
+    decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+    
+    if ref in ('S', 'W'):
+        decimal = -decimal
+    return f"{decimal:.6f}" # Retorna como string formatada
+
+def extract_gps_data(file_path):
+    """
+    Extrai Latitude e Longitude de uma imagem usando dados EXIF.
+    Retorna (latitude_str, longitude_str) ou (None, None).
+    """
+    if not file_path:
+        print("DIAGNOSTICO GPS: Caminho do arquivo não fornecido.")
+        return None, None
+        
+    full_path = os.path.join(app.root_path, file_path)
+    if not os.path.exists(full_path):
+        print(f"DIAGNOSTICO GPS: Arquivo não encontrado no caminho: {full_path}")
+        return None, None
+
+    try:
+        img = Image.open(full_path)
+        exif_data = img.getexif() 
+        
+        if not exif_data:
+            print("DIAGNOSTICO GPS: NENHUM dado EXIF encontrado na imagem.")
+            return None, None
+
+        GPS_IFD_TAG = 34853 # ID da tag para o bloco GPS
+        
+        try:
+            gps_info = exif_data.get_ifd(GPS_IFD_TAG)
+        except AttributeError:
+             gps_info = exif_data.get(GPS_IFD_TAG)
+        
+        if not gps_info:
+            print("DIAGNOSTICO GPS: Dados de GPS (Tag 34853) não encontrados (sem localização).")
+            return None, None
+            
+        GPS_LATITUDE_REF = 2 
+        GPS_LATITUDE = 1     
+        GPS_LONGITUDE_REF = 4 
+        GPS_LONGITUDE = 3    
+
+        if all(tag in gps_info for tag in [GPS_LATITUDE_REF, GPS_LATITUDE, GPS_LONGITUDE_REF, GPS_LONGITUDE]):
+            
+            lat_dms_raw = gps_info.get(GPS_LATITUDE)
+            lon_dms_raw = gps_info.get(GPS_LONGITUDE)
+            lat_ref_raw = gps_info.get(GPS_LATITUDE_REF)
+            lon_ref_raw = gps_info.get(GPS_LONGITUDE_REF)
+
+            # LOGS MELHORADOS PARA VER TODOS OS DADOS BRUTOS (ajustado para o log atual)
+            print(f"DIAGNOSTICO GPS: Dados brutos de Lat DMS (Tag 1): {lat_dms_raw}") 
+            print(f"DIAGNOSTICO GPS: Dados brutos de Lat Ref (Tag 2): {lat_ref_raw}")
+            print(f"DIAGNOSTICO GPS: Dados brutos de Lon DMS (Tag 3): {lon_dms_raw}")
+            print(f"DIAGNOSTICO GPS: Dados brutos de Lon Ref (Tag 4): {lon_ref_raw}")
+            
+            # Validação principal: deve ser uma tupla de 3 elementos
+            if not isinstance(lat_dms_raw, tuple) or len(lat_dms_raw) < 3:
+                 print("DIAGNOSTICO GPS: Formato DMS inválido. O valor da Latitude (Tag 1) não é uma tupla de 3 elementos (Graus, Minutos, Segundos).")
+                 return None, None
+            
+            if not isinstance(lon_dms_raw, tuple) or len(lon_dms_raw) < 3:
+                 print("DIAGNOSTICO GPS: Formato DMS inválido. O valor da Longitude (Tag 3) não é uma tupla de 3 elementos.")
+                 return None, None
+            
+            # Se a validação passou, prossegue com a conversão
+            latitude = convert_dms_to_decimal(lat_dms_raw, lat_ref_raw)
+            longitude = convert_dms_to_decimal(lon_dms_raw, lon_ref_raw)
+            
+            print(f"DIAGNOSTICO GPS: CONVERSÃO SUCESSO. Lat: {latitude}, Lon: {longitude}")
+            return latitude, longitude
+            
+    except Exception as e:
+        print(f"DIAGNOSTICO GPS: ERRO FATAL durante a extração: {e}")
+        return None, None
+        
+    print("DIAGNOSTICO GPS: Extração falhou por motivo desconhecido.")
+    return None, None
+
 # ==============================================================================
-# FUNÇÕES AUXILIARES
+# FUNÇÕES AUXILIARES EXISTENTES
 # ==============================================================================
 
 def generate_single_pdf(pdf, inspection_data):
@@ -68,7 +162,20 @@ def generate_single_pdf(pdf, inspection_data):
 
     pdf.cell(0, 7, text=f"Data: {created_at_str}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-    pdf.ln(5)
+    # NOVO: Inclusão de Geolocation no PDF
+    latitude = inspection_data.get('latitude')
+    longitude = inspection_data.get('longitude')
+    
+    if latitude and longitude and latitude != 'None' and longitude != 'None':
+        pdf.ln(5)
+        pdf.set_font("Arial", style='B', size=12)
+        pdf.cell(0, 7, text="Localização (GPS):", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_font("Arial", size=12)
+        pdf.cell(0, 7, text=f"Latitude: {latitude}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 7, text=f"Longitude: {longitude}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        
+    pdf.ln(5) # Linha adicionada para consistência
+    
     pdf.set_font("Arial", style='B', size=12)
     pdf.cell(0, 7, text="Dimensões:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_font("Arial", size=12)
@@ -134,7 +241,7 @@ def save_file(file):
     return None
 
 # ==============================================================================
-# ROTAS DO DASHBOARD (Restauradas)
+# ROTAS DO DASHBOARD 
 # ==============================================================================
 
 @app.route("/api/dashboard")
@@ -145,9 +252,11 @@ def dashboard_api():
     cur.execute("SELECT id, name FROM folders ORDER BY name")
     folders = cur.fetchall()
 
+    # Inclui 'latitude' e 'longitude' na seleção
     cur.execute("""
         SELECT 
             i.id, i.name, i.created_at, i.dimensions_value, i.dimensions_unit, 
+            i.latitude, i.longitude,
             f.name AS folder_name
         FROM inspections i
         JOIN folders f ON i.folder_id = f.id
@@ -162,7 +271,6 @@ def dashboard_api():
 @app.route("/api/folder", methods=["POST"])
 def create_folder_api():
     """Cria uma nova pasta de arquivos (POST)."""
-    # A maneira de obter dados depende do Content-Type. Usaremos request.form.get
     folder_name = request.form.get("folder_name") 
     if not folder_name:
         return jsonify(success=False, message="Nome da pasta é obrigatório"), 400
@@ -216,25 +324,35 @@ def add_record_api():
         montante_path = save_file(foto_montante_file)
         
         if not jusante_path or not montante_path:
+            # Reverte o upload se um dos arquivos principais falhar
             if jusante_path and os.path.exists(os.path.join(app.root_path, jusante_path)): 
                 os.remove(os.path.join(app.root_path, jusante_path))
             if montante_path and os.path.exists(os.path.join(app.root_path, montante_path)): 
                 os.remove(os.path.join(app.root_path, montante_path))
             return jsonify(success=False, message="Fotos Jusante e Montante são obrigatórias"), 400
 
+        # NOVO: Extrair localização do arquivo jusante
+        latitude, longitude = extract_gps_data(jusante_path)
+
+        # Log dos valores de DB (para diagnóstico)
+        print(f"DIAGNOSTICO ADD: Valores finais de GPS antes do DB: Lat: {latitude}, Lon: {longitude}")
+
+
         # Salvar outras fotos (opcional, lista)
         outras_fotos_files = request.files.getlist('outras_fotos')
         other_photos_paths = [save_file(f) for f in outras_fotos_files if f and f.filename]
 
-        # Inserir no banco de dados
+        # Inserir no banco de dados. NOVOS CAMPOS: latitude, longitude
         cur.execute("""
             INSERT INTO inspections (
                 folder_id, name, dimensions_value, dimensions_unit, 
-                observations, jusante_photo, montante_photo, other_photos
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                observations, jusante_photo, montante_photo, other_photos,
+                latitude, longitude
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             folder_id, name, dim_value, dim_unit, 
-            obs, jusante_path, montante_path, json.dumps(other_photos_paths)
+            obs, jusante_path, montante_path, json.dumps(other_photos_paths),
+            latitude, longitude # NOVOS VALORES
         ))
         
         mysql.connection.commit()
@@ -260,7 +378,7 @@ def delete_record_api(id):
     return jsonify(success=True, message="Registro excluído com sucesso")
 
 # ==============================================================================
-# ROTAS DE DOWNLOAD (Existente e Novas)
+# ROTAS DE DOWNLOAD
 # ==============================================================================
 
 @app.route("/api/inspection/photos/<int:id>")
@@ -336,13 +454,14 @@ def download_photos_api(id):
 @app.route("/api/inspection/csv/<int:id>")
 def download_csv_api(id):
     """
-    Gera um arquivo CSV contendo os dados de texto de uma inspeção.
+    Gera um arquivo CSV contendo os dados de texto de uma inspeção, incluindo GPS.
     """
     cur = mysql.connection.cursor()
+    # Inclui i.latitude e i.longitude na query
     cur.execute("""
         SELECT 
             i.id, i.name, i.created_at, i.dimensions_value, i.dimensions_unit, 
-            i.observations, f.name AS folder_name
+            i.observations, i.latitude, i.longitude, f.name AS folder_name
         FROM inspections i
         JOIN folders f ON i.folder_id = f.id
         WHERE i.id = %s
@@ -396,6 +515,7 @@ def download_folder_pdfs_api(folderId):
         return jsonify(success=False, message="Pasta não encontrada"), 404
     folder_name = folder_data['name']
     
+    # Garante que i.* inclui latitude e longitude (se o DB estiver atualizado)
     cur.execute("""
         SELECT i.*, f.name AS folder_name
         FROM inspections i
@@ -457,6 +577,7 @@ def download_pdf_api(id):
         
     cur = mysql.connection.cursor()
     
+    # Garante que i.* inclui latitude e longitude (se o DB estiver atualizado)
     cur.execute("""
         SELECT i.*, f.name AS folder_name
         FROM inspections i
